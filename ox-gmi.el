@@ -105,7 +105,7 @@ LINKS is an alist like `org-gmi--links-in-section'"
 (defun org-gmi-preformatted-block (block _contents info)
   "Transcode BLOCK element into Gemini format.
 CONTENTS is nil.  INFO is a plist used as a communication channel."
-  (format "```\r\n%s```\r\n"
+  (format "```\n%s```\n"
           (org-remove-indentation
            (org-export-format-code-default block info))))
 
@@ -148,7 +148,7 @@ a communication channel."
 				                      headline info))))
 			             "."))))
 	      (concat bullet (make-string (- 4 (length bullet)) ?\s)
-                  heading tags "\r\n\r\n" contents))
+                  heading tags "\n\n" contents))
       ;; Else
 	  (concat (org-md--headline-title 'atx level heading nil tags)
 		      contents))))
@@ -163,10 +163,10 @@ holding export options."
    ;; Table of contents.
    (let ((depth (plist-get info :with-toc)))
      (when depth
-       (concat (org-md--build-toc info (and (wholenump depth) depth)) "\r\n")))
+       (concat (org-gmi--build-toc info (and (wholenump depth) depth)) "\n")))
    ;; Document contents.
    contents
-   "\r\n"
+   "\n"
    ;; Footnotes section.
    (org-md--footnote-section info)))
 
@@ -221,7 +221,7 @@ a communication channel."
 (defun org-gmi-section (section contents info)
   "Transcode SECTION into Gemini format."
   (let ((output
-         (concat contents "\r\n"
+         (concat contents "\n"
                  (org-gmi--describe-links org-gmi--links-in-section))))
     ;; Reset link list
     (setq org-gmi--links-in-section '())
