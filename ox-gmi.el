@@ -260,7 +260,11 @@ non-nil."
   (interactive)
   (org-export-to-buffer
    'gmi "*Org Gemini Export*"
-   async subtreep visible-only nil nil (lambda () (text-mode))))
+   async subtreep visible-only nil nil
+   #'(lambda ()
+       (if (featurep 'gemini-mode)
+           (gemini-mode)
+         (text-mode)))))
 
 ;;;###autoload
 (defun org-gmi-export-to-gemini (&optional async subtreep visible-only)
