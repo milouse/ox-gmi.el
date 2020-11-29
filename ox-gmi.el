@@ -105,9 +105,13 @@ LINKS is an alist like `org-gmi--links-in-section'"
 (defun org-gmi-preformatted-block (block _contents info)
   "Transcode BLOCK element into Gemini format.
 CONTENTS is nil.  INFO is a plist used as a communication channel."
-  (format "```\n%s```\n"
-          (org-remove-indentation
-           (org-export-format-code-default block info))))
+  (let ((language (org-export-data (org-element-property :language block) info))
+        (caption (org-export-data (org-element-property :caption block) info)))
+    (setq caption (if caption (format "%s (%s)" language caption) language))
+    (format "```%s\n%s```\n"
+            caption
+            (org-remove-indentation
+             (org-export-format-code-default block info)))))
 
 (defun org-gmi-export-block (export-block contents info)
   "Transcode a EXPORT-BLOCK element from Org to Gemini.
