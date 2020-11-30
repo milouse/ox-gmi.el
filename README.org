@@ -1,0 +1,28 @@
+#+title: Gemini Back-End for Org Export Engine
+
+This library implements a Gemini back-end for Org exporter, based on
+~markdown~ back-end.  It also heavily depends on the ~ascii~ back-end.
+
+* Install
+
+Obviously, this package depends on /org-mode/, which must be loaded first.
+
+You first need to clone this repository. We recommend you to put it
+somewhere under your ~.emacs.d~ folder.
+
+#+begin_src shell
+cd ~/.emacs.d
+git clone https://git.umaneti.net/ox-gmi.el.git
+#+end_src
+
+Then, you may whish to compile it. You can do so with the Emacs command
+~M-x byte-compile-file RET \~/.emacs.d/ox-gmi.el/ox-gmi.el~
+
+When it's done, you can add the following line in your GNU Emacs config
+file:
+
+#+begin_src emacs-lisp
+(load-file "~/.emacs.d/ox-gmi.el/ox-gmi.elc")
+#+end_src
+
+And everything should be fine.
