@@ -158,9 +158,7 @@ CONTENTS is nil.  INFO is a plist used as a communication channel."
   "Transcode a EXPORT-BLOCK element from Org to Gemini.
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (if (member (org-element-property :type export-block) '("GEMINI" "GMI"))
-      (org-remove-indentation (org-element-property :value export-block))
-    ;; Also include HTML export blocks.
-    (org-export-with-backend 'html export-block contents info)))
+      (org-remove-indentation (org-element-property :value export-block))))
 
 (defun org-gmi-headline (headline contents info)
   "Transcode HEADLINE element into Gemini format.
