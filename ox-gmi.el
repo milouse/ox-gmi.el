@@ -102,7 +102,7 @@ LINKS is an alist like `org-gmi--links-in-section'"
        (let ((dest (car link))
              (reference (cadr link))
              (label (car (cddr link))))
-         (format "=> %s [%s] %s" dest reference label)))
+         (format "=> %s [%d] %s" dest reference label)))
    links "\n"))
 
 (defun org-gmi--build-toc (info &optional n _keyword scope)
@@ -249,7 +249,7 @@ INFO is a plist holding contextual information."
     (unless link-data
       (setq link-data `(,href ,next-reference ,label))
       (add-to-list 'org-gmi--links-in-section link-data t))
-    (format "%s[%s]" label (cadr link-data))))
+    (format "%s[%d]" label (cadr link-data))))
 
 (defun org-gmi-paragraph (_paragraph contents _info)
   "Transcode PARAGRAPH element into Gemini format.
