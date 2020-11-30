@@ -115,38 +115,6 @@ LINKS is an alist like `org-gmi--links-in-section'"
          (format "=> %s [%d] %s" dest reference label)))
    links "\n"))
 
-(defun org-gmi--build-toc (info &optional n _keyword scope)
-  "Return a table of contents.
-INFO is a plist used as a communication channel.
-Optional argument N, when non-nil, is an integer specifying the
-depth of the table.
-When optional argument SCOPE is non-nil, build a table of
-contents according to the specified element."
-  (concat
-   (unless scope
-     (let ((title (org-html--translate "Table of Contents" info)))
-       (org-md--headline-title 'atx 2 title nil)))
-   (mapconcat
-    (lambda (headline)
-      (let* ((prefix
-	          (if (not (org-export-numbered-headline-p headline info)) ""
-                (concat
-                 (mapconcat 'number-to-string
-                            (org-export-get-headline-number headline info)
-                            ".")
-                 ". ")))
-	         (title (org-export-data-with-backend
-		             (org-export-get-alt-title headline info)
-		             (org-export-toc-entry-backend 'gmi)
-		             info))
-	         (tags (and (plist-get info :with-tags)
-			            (not (eq 'not-in-toc (plist-get info :with-tags)))
-			            (org-make-tag-string
-			             (org-export-get-tags headline info)))))
-	    (concat prefix title tags)))
-    (org-export-collect-headlines info n scope) "\n")
-   "\n"))
-
 
 ;;; Transcode Functions
 
@@ -230,12 +198,7 @@ holding export options."
      'atx 1
      (org-export-data (plist-get info :title) info)
      nil))
-   "\n"
-   ;; Table of contents.
-   (let ((depth (plist-get info :with-toc)))
-     (when depth
-       (org-gmi--build-toc info (and (wholenump depth) depth))))
-   "\n"
+   "\n\n"
    ;; Document contents.
    contents
    "\n"
