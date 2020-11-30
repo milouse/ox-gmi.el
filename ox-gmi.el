@@ -50,7 +50,8 @@
 	    (lambda (a s v b)
 	      (if a (org-gmi-export-to-gemini t s v)
 		(org-open-file (org-gmi-export-to-gemini nil s v)))))))
-  :translate-alist '((center-block . org-gmi--convert-to-ascii)
+  :translate-alist '((center-block . org-gmi-center)
+                     (entity . org-gmi--convert-to-ascii)
 		             (example-block . org-gmi-preformatted-block)
 		             (export-block . org-gmi-export-block)
 		             (fixed-width . org-gmi-preformatted-block)
@@ -62,6 +63,7 @@
 		             (line-break . org-gmi-line-break)
 		             (link . org-gmi-link)
 		             (paragraph . org-gmi-paragraph)
+                     (plain-text . org-gmi-plain-text)
 		             (property-drawer . org-gmi-preformatted-block)
 		             (quote-block . org-gmi-quote-block)
                      (section . org-gmi-section)
@@ -81,10 +83,16 @@
 
 (defun org-gmi--convert-to-ascii (datum _contents info)
   "Convert DATUM into ASCII, including contents."
-  (let ((org-ascii-charset 'utf-8)
-        (org-ascii-links-to-notes t)
-        (org-ascii-text-width 80))
-    (org-export-data-with-backend datum 'ascii info)))
+  ;; UTF-8 please
+  (setq info (plist-put info :ascii-charset 'utf-8))
+  ;; All this sizes are required to center texts
+  (setq info (plist-put info :ascii-text-width 80))
+  (setq info (plist-put info :ascii-global-margin 0))
+  (setq info (plist-put info :ascii-list-margin 0))
+  (setq info (plist-put info :ascii-inner-margin 2))
+  (setq info (plist-put info :ascii-quote-margin 6))
+  (setq info (plist-put info :ascii-inlinetask-width 30))
+  (org-export-data-with-backend datum 'ascii info))
 
 (defun org-gmi--format-paragraph (content &optional prefix)
   "Transcode PARAGRAPH element into Gemini format.
@@ -159,6 +167,20 @@ CONTENTS is nil.  INFO is a plist used as a communication channel."
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (if (member (org-element-property :type export-block) '("GEMINI" "GMI"))
       (org-remove-indentation (org-element-property :value export-block))))
+
+(defun org-gmi-center (center contents info)
+  "Transcode a CENTER block from Org to Gemini.
+CONTENTS are the definition itself.  INFO is a plist holding
+contextual information."
+  (format "```\n%s\n```"
+          (org-trim
+           (org-gmi--convert-to-ascii center contents info) t)))
+
+(defun org-gmi-entity (_entity contents _info)
+  "Transcode an ENTITY object from Org to Gemini.
+CONTENTS are the definition itself.  INFO is a plist holding
+contextual information."
+  contents)
 
 (defun org-gmi-headline (headline contents info)
   "Transcode HEADLINE element into Gemini format.
@@ -262,6 +284,14 @@ INFO is a plist holding contextual information."
 CONTENTS is the paragraph contents.  INFO is a plist used as
 a communication channel."
   (org-gmi--format-paragraph contents))
+
+(defun org-gmi-plain-text (text info)
+  "Transcode a TEXT string into Gemini format.
+TEXT is the string to transcode.  INFO is a plist holding
+contextual information."
+  (setq info (plist-put info :with-smart-quotes nil))
+  (setq info (plist-put info :with-special-strings nil))
+  (org-md-plain-text text info))
 
 (defun org-gmi-quote-block (_quote-block contents _info)
   "Transcode QUOTE-BLOCK element into Gemini format.
