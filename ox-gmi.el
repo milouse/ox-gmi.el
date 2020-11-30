@@ -148,7 +148,7 @@ CONTENTS is nil.  INFO is a plist used as a communication channel."
             (org-remove-indentation
              (org-export-format-code-default block info)))))
 
-(defun org-gmi-export-block (export-block contents info)
+(defun org-gmi-export-block (export-block _contents _info)
   "Transcode a EXPORT-BLOCK element from Org to Gemini.
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (if (member (org-element-property :type export-block) '("GEMINI" "GMI"))
@@ -216,7 +216,7 @@ a communication channel."
   (replace-regexp-in-string
    "^-" "*" (org-md-item item contents info)))
 
-(defun org-gmi-keyword (keyword contents info)
+(defun org-gmi-keyword (keyword _contents _info)
   "Transcode a KEYWORD element into Gemini format.
 CONTENTS is nil.  INFO is a plist used as a communication
 channel."
@@ -229,7 +229,7 @@ CONTENTS is nil.  INFO is a plist used as a communication
 channel."
   " ")
 
-(defun org-gmi-link (link desc info)
+(defun org-gmi-link (link desc _info)
   "Transcode a LINK object from Org to Gemini.
 DESC is the description part of the link, or the empty string.
 INFO is a plist holding contextual information."
@@ -257,7 +257,7 @@ CONTENTS is the quote-block contents.  INFO is a plist used as
 a communication channel."
   (org-gmi--format-paragraph contents "> "))
 
-(defun org-gmi-section (section contents info)
+(defun org-gmi-section (_section contents _info)
   "Transcode SECTION into Gemini format."
   (let ((output
          (concat contents "\n"
