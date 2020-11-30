@@ -1,16 +1,22 @@
 ;;; ox-gemini.el --- Gemini Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2020 Étienne Deparis
 
 ;; Author: Étienne Deparis <etienne@depar.is>
+;; Created: 29 November 2020
+;; Version: 0.1
 ;; Keywords: org, gemini, gmi
+;; Homepage: https://git.umaneti.net/ox-gmi.el/
 
-;; This file is part of GNU Emacs.
+;;; License:
 
-;; GNU Emacs is free software: you can redistribute it and/or modify
+;; This file is not part of GNU Emacs.
+;; However, it is distributed under the same license.
+
+;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
 
 ;; GNU Emacs is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,7 +29,7 @@
 ;;; Commentary:
 
 ;; This library implements a Gemini back-end for Org exporter, based on
-;; `markdown' back-end.  See Org manual for more information.
+;; `markdown' back-end.  It also heavily depends on the `ascii' back-end.
 
 ;;; Code:
 
