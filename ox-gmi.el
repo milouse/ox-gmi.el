@@ -271,8 +271,14 @@ DESC is the description part of the link, or the empty string."
     ;; As links are specific for a section, which should not be that long (?),
     ;; we will always use the first label encountered for a link as reference.
     (unless link-data
-      (setq link-data `(,href ,next-reference ,label))
-      (add-to-list 'org-gmi--links-in-section link-data t))
+      (let* ((scheme (car (split-string href ":" t)))
+             (ref-label
+              (if (and (not (string= desc href))
+                       (not (string= scheme "gemini")))
+                  (format "%s (%s)" desc scheme)
+                desc)))
+        (setq link-data (list href next-reference ref-label))
+        (add-to-list 'org-gmi--links-in-section link-data t)))
     (format "%s[%d]" label (cadr link-data))))
 
 (defun org-gmi-paragraph (_paragraph contents _info)
