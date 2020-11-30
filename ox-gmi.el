@@ -1,12 +1,12 @@
-;;; ox-gemini.el --- Gemini Back-End for Org Export Engine -*- lexical-binding: t; -*-
+;;; ox-gmi.el --- Gemini Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Étienne Deparis
 
 ;; Author: Étienne Deparis <etienne@depar.is>
 ;; Created: 29 November 2020
 ;; Version: 0.1
-;; Package-Requires: ((emacs "26.1") (org "9.4"))
-;; Keywords: org, gemini, gmi
+;; Package-Requires: ((emacs "27.1"))
+;; Keywords: wp
 ;; Homepage: https://git.umaneti.net/ox-gmi.el/
 
 ;;; License:
@@ -76,14 +76,15 @@
 ;;; Inner Variables
 
 (defvar org-gmi--links-in-section '()
-  "AList storing all links in current section")
+  "AList storing all links in current section.")
 
 
 
 ;;; Inner Functions
 
 (defun org-gmi--convert-to-ascii (datum _contents info)
-  "Convert DATUM into ASCII, including contents."
+  "Convert DATUM into ASCII, including contents.
+INFO is a plist used as a communication channel."
   ;; UTF-8 please
   (setq info (plist-put info :ascii-charset 'utf-8))
   ;; All this sizes are required to center texts
@@ -95,13 +96,13 @@
   (setq info (plist-put info :ascii-inlinetask-width 30))
   (org-export-data-with-backend datum 'ascii info))
 
-(defun org-gmi--format-paragraph (content &optional prefix)
-  "Transcode PARAGRAPH element into Gemini format.
+(defun org-gmi--format-paragraph (paragraph &optional prefix)
+  "Transcode PARAGRAPH into Gemini format.
 If PREFIX is non-nil, add it at the beginning of each lines."
   (replace-regexp-in-string
    "^\\s-?" (or prefix "")
    (org-trim
-    (replace-regexp-in-string "\r?\n\\([^\r\n]\\)" " \\1" content))))
+    (replace-regexp-in-string "\r?\n\\([^\r\n]\\)" " \\1" paragraph))))
 
 (defun org-gmi--describe-links (links)
   "Return a string describing a list of links.
@@ -116,12 +117,9 @@ LINKS is an alist like `org-gmi--links-in-section'"
 
 (defun org-gmi--build-toc (info &optional n _keyword scope)
   "Return a table of contents.
-
 INFO is a plist used as a communication channel.
-
 Optional argument N, when non-nil, is an integer specifying the
 depth of the table.
-
 When optional argument SCOPE is non-nil, build a table of
 contents according to the specified element."
   (concat
@@ -154,7 +152,7 @@ contents according to the specified element."
 
 (defun org-gmi-preformatted-block (block _contents info)
   "Transcode BLOCK element into Gemini format.
-CONTENTS is nil.  INFO is a plist used as a communication channel."
+INFO is a plist used as a communication channel."
   (let ((language (org-export-data (org-element-property :language block) info))
         (caption (org-export-data (org-element-property :caption block) info)))
     (setq caption (if caption (format "%s - %s" language caption) language))
@@ -164,28 +162,26 @@ CONTENTS is nil.  INFO is a plist used as a communication channel."
              (org-export-format-code-default block info)))))
 
 (defun org-gmi-export-block (export-block _contents _info)
-  "Transcode a EXPORT-BLOCK element from Org to Gemini.
-CONTENTS is nil.  INFO is a plist holding contextual information."
+  "Transcode a EXPORT-BLOCK element from Org to Gemini."
   (if (member (org-element-property :type export-block) '("GEMINI" "GMI"))
       (org-remove-indentation (org-element-property :value export-block))))
 
 (defun org-gmi-center (center contents info)
   "Transcode a CENTER block from Org to Gemini.
-CONTENTS are the definition itself.  INFO is a plist holding
-contextual information."
+CONTENTS is the block value.  INFO is a plist holding contextual
+information."
   (format "```\n%s\n```"
           (org-trim
            (org-gmi--convert-to-ascii center contents info) t)))
 
 (defun org-gmi-entity (_entity contents _info)
   "Transcode an ENTITY object from Org to Gemini.
-CONTENTS are the definition itself.  INFO is a plist holding
-contextual information."
+CONTENTS is the entity itself."
   contents)
 
 (defun org-gmi-headline (headline contents info)
   "Transcode HEADLINE element into Gemini format.
-CONTENTS is the headline contents.  INFO is a plist used as
+CONTENTS is the headline value.  INFO is a plist used as
 a communication channel."
   (let* ((level (1+ (org-export-get-relative-level headline info)))
 	     (title (org-export-data (org-element-property :title headline) info))
@@ -246,8 +242,8 @@ holding export options."
 
 (defun org-gmi-item (item contents info)
   "Transcode ITEM element into Gemini format.
-CONTENTS is the item contents.  INFO is a plist used as
-a communication channel."
+CONTENTS is the item value.  INFO is a plist used as a
+communication channel."
   (replace-regexp-in-string
    "^-\\s-+" "* " (org-md-item item contents info)))
 
@@ -266,8 +262,7 @@ channel."
 
 (defun org-gmi-link (link desc _info)
   "Transcode a LINK object from Org to Gemini.
-DESC is the description part of the link, or the empty string.
-INFO is a plist holding contextual information."
+DESC is the description part of the link, or the empty string."
   (let* ((href (org-element-property :raw-link link))
          (label (or desc href))
          (link-data (assoc href org-gmi--links-in-section))
@@ -282,8 +277,7 @@ INFO is a plist holding contextual information."
 
 (defun org-gmi-paragraph (_paragraph contents _info)
   "Transcode PARAGRAPH element into Gemini format.
-CONTENTS is the paragraph contents.  INFO is a plist used as
-a communication channel."
+CONTENTS is the paragraph value."
   (org-gmi--format-paragraph contents))
 
 (defun org-gmi-plain-text (text info)
@@ -296,12 +290,12 @@ contextual information."
 
 (defun org-gmi-quote-block (_quote-block contents _info)
   "Transcode QUOTE-BLOCK element into Gemini format.
-CONTENTS is the quote-block contents.  INFO is a plist used as
-a communication channel."
+CONTENTS is the quote-block value."
   (org-gmi--format-paragraph contents "> "))
 
 (defun org-gmi-section (_section contents _info)
-  "Transcode SECTION into Gemini format."
+  "Transcode SECTION into Gemini format.
+CONTENTS is the section value."
   (let ((output
          (concat contents "\n"
                  (org-gmi--describe-links org-gmi--links-in-section))))
