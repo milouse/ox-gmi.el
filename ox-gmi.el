@@ -118,7 +118,7 @@ contents according to the specified element."
   (concat
    (unless scope
      (let ((title (org-html--translate "Table of Contents" info)))
-       (org-md--headline-title 'atx 1 title nil)))
+       (org-md--headline-title 'atx 2 title nil)))
    (mapconcat
     (lambda (headline)
       (let* ((prefix
@@ -166,7 +166,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   "Transcode HEADLINE element into Gemini format.
 CONTENTS is the headline contents.  INFO is a plist used as
 a communication channel."
-  (let* ((level (org-export-get-relative-level headline info))
+  (let* ((level (1+ (org-export-get-relative-level headline info)))
 	     (title (org-export-data (org-element-property :title headline) info))
 	     (todo (and (plist-get info :with-todo-keywords)
 		            (let ((todo (org-element-property :todo-keyword
@@ -195,8 +195,8 @@ a communication channel."
 	      (concat bullet (make-string (- 4 (length bullet)) ?\s)
                   heading tags "\n\n" contents))
       ;; Else
-	  (concat (org-md--headline-title 'atx level heading nil tags)
-		      contents))))
+	  (concat (org-trim (org-md--headline-title 'atx level heading nil tags))
+		      "\n\n" contents))))
 
 (defun org-gmi-inner-template (contents info)
   "Return body of document after converting it to Gemini syntax.
@@ -205,10 +205,18 @@ holding export options."
   ;; Make sure CONTENTS is separated from table of contents and
   ;; footnotes with at least a blank line.
   (concat
+   ;; Doc title
+   (org-trim
+    (org-md--headline-title
+     'atx 1
+     (org-export-data (plist-get info :title) info)
+     nil))
+   "\n"
    ;; Table of contents.
    (let ((depth (plist-get info :with-toc)))
      (when depth
-       (concat (org-gmi--build-toc info (and (wholenump depth) depth)) "\n")))
+       (org-gmi--build-toc info (and (wholenump depth) depth))))
+   "\n"
    ;; Document contents.
    contents
    "\n"
