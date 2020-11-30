@@ -5,6 +5,7 @@
 ;; Author: Étienne Deparis <etienne@depar.is>
 ;; Created: 29 November 2020
 ;; Version: 0.1
+;; Package-Requires: ((emacs "26.1") (org "9.4"))
 ;; Keywords: org, gemini, gmi
 ;; Homepage: https://git.umaneti.net/ox-gmi.el/
 
