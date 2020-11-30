@@ -248,7 +248,7 @@ holding export options."
 CONTENTS is the item contents.  INFO is a plist used as
 a communication channel."
   (replace-regexp-in-string
-   "^-" "*" (org-md-item item contents info)))
+   "^-\\s-+" "* " (org-md-item item contents info)))
 
 (defun org-gmi-keyword (keyword _contents _info)
   "Transcode a KEYWORD element into Gemini format.
