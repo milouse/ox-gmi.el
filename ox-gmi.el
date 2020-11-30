@@ -155,7 +155,9 @@ contents according to the specified element."
 INFO is a plist used as a communication channel."
   (let ((language (org-export-data (org-element-property :language block) info))
         (caption (org-export-data (org-element-property :caption block) info)))
-    (setq caption (if caption (format "%s - %s" language caption) language))
+    (setq caption (if (and caption (not (string= "" caption)))
+                      (format "%s - %s" language caption)
+                    language))
     (format "```%s\n%s```\n"
             caption
             (org-remove-indentation
