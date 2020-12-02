@@ -304,7 +304,7 @@ DESC is the description part of the link, or the empty string."
           (if (and (not (string= desc href))
                    (not (string= scheme href)) ;; relative link
                    (not (member scheme '("gemini" "file"))))
-              (format "%s (%s)" label scheme)
+              (format "%s (%s)" label (upcase scheme))
             label))
          ;; Default next-reference
          (next-reference (1+ (length org-gmi--links-in-section))))
