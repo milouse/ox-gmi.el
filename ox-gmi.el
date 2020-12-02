@@ -34,14 +34,13 @@
 
 ;;; Code:
 
-(require 'ox-md)
 (require 'ox-ascii)
 (require 'ox-publish)
 
 
 ;;; Define Back-End
 
-(org-export-define-derived-backend 'gmi 'md
+(org-export-define-derived-backend 'gmi 'ascii
   :menu-entry
   '(?g "Export to Gemini"
        ((?G "To temporary buffer"
@@ -52,25 +51,21 @@
 	      (if a (org-gmi-export-to-gemini t s v)
 		(org-open-file (org-gmi-export-to-gemini nil s v)))))))
   :translate-alist '((center-block . org-gmi-center)
-                     (entity . org-gmi--convert-to-ascii)
 		             (example-block . org-gmi-preformatted-block)
 		             (export-block . org-gmi-export-block)
 		             (fixed-width . org-gmi-preformatted-block)
 		             (headline . org-gmi-headline)
-                     (inlinetask . org-gmi--convert-to-ascii)
 		             (inner-template . org-gmi-inner-template)
 		             (item . org-gmi-item)
 		             (keyword . org-gmi-keyword)
 		             (line-break . org-gmi-line-break)
 		             (link . org-gmi-link)
 		             (paragraph . org-gmi-paragraph)
-                     (plain-text . org-gmi-plain-text)
-		             (property-drawer . org-gmi-preformatted-block)
 		             (quote-block . org-gmi-quote-block)
                      (section . org-gmi-section)
-                     (special-block . org-gmi--convert-to-ascii)
 		             (src-block . org-gmi-preformatted-block)
-		             (table . org-gmi--convert-to-ascii)))
+                     (template . org-gmi-template)))
+
 
 
 ;;; Inner Variables
@@ -82,29 +77,13 @@
 
 ;;; Inner Functions
 
-(defun org-gmi--convert-to-ascii (datum _contents info)
-  "Convert DATUM into ASCII, including contents.
-INFO is a plist used as a communication channel."
-  ;; UTF-8 please
-  (setq info (plist-put info :ascii-charset 'utf-8))
-  ;; All this sizes are required to center texts
-  (setq info (plist-put info :ascii-text-width 80))
-  (setq info (plist-put info :ascii-global-margin 0))
-  (setq info (plist-put info :ascii-list-margin 0))
-  (setq info (plist-put info :ascii-inner-margin 2))
-  (setq info (plist-put info :ascii-quote-margin 6))
-  (setq info (plist-put info :ascii-inlinetask-width 30))
-  (org-export-data-with-backend datum 'ascii info))
+(defun org-gmi--build-headline (level title &optional tags)
+  "Generate a headline TITLE for the given LEVEL.
+TAGS are the tags set on the section."
+  (let ((level-mark (make-string level ?#)))
+    (concat level-mark " " title tags "\n\n")))
 
-(defun org-gmi--format-paragraph (paragraph &optional prefix)
-  "Transcode PARAGRAPH into Gemini format.
-If PREFIX is non-nil, add it at the beginning of each lines."
-  (replace-regexp-in-string
-   "^\\s-?" (or prefix "")
-   (org-trim
-    (replace-regexp-in-string "\r?\n\\([^\r\n]\\)" " \\1" paragraph))))
-
-(defun org-gmi--describe-links (links)
+(defun org-gmi--build-links (links)
   "Return a string describing a list of links.
 LINKS is an alist like `org-gmi--links-in-section'"
   (mapconcat
@@ -114,6 +93,14 @@ LINKS is an alist like `org-gmi--links-in-section'"
              (label (car (cddr link))))
          (format "=> %s [%d] %s" dest reference label)))
    links "\n"))
+
+(defun org-gmi--format-paragraph (paragraph &optional prefix)
+  "Transcode PARAGRAPH into Gemini format.
+If PREFIX is non-nil, add it at the beginning of each lines."
+  (replace-regexp-in-string
+   "^\\s-?" (or prefix "")
+   (org-trim
+    (replace-regexp-in-string "\r?\n\\([^\r\n]\\)" " \\1" paragraph))))
 
 
 ;;; Transcode Functions
@@ -136,13 +123,12 @@ INFO is a plist used as a communication channel."
   (if (member (org-element-property :type export-block) '("GEMINI" "GMI"))
       (org-remove-indentation (org-element-property :value export-block))))
 
-(defun org-gmi-center (center contents info)
+(defun org-gmi-center (_center contents info)
   "Transcode a CENTER block from Org to Gemini.
 CONTENTS is the block value.  INFO is a plist holding contextual
 information."
-  (format "```\n%s\n```"
-          (org-trim
-           (org-gmi--convert-to-ascii center contents info) t)))
+  (format "```\n%s```"
+          (org-ascii--fill-string contents 80 info 'center)))
 
 (defun org-gmi-entity (_entity contents _info)
   "Transcode an ENTITY object from Org to Gemini.
@@ -182,28 +168,40 @@ a communication channel."
 	      (concat bullet (make-string (- 4 (length bullet)) ?\s)
                   heading tags "\n\n" contents))
       ;; Else
-	  (concat (org-trim (org-md--headline-title 'atx level heading nil tags))
-		      "\n\n" contents))))
+	  (concat (org-gmi--build-headline level heading tags) contents))))
 
 (defun org-gmi-inner-template (contents info)
   "Return body of document after converting it to Gemini syntax.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
-  ;; Make sure CONTENTS is separated from table of contents and
-  ;; footnotes with at least a blank line.
   (concat
-   ;; Doc title
-   (org-trim
-    (org-md--headline-title
-     'atx 1
-     (org-export-data (plist-get info :title) info)
-     nil))
-   "\n\n"
    ;; Document contents.
    contents
-   "\n"
    ;; Footnotes section.
-   (org-md--footnote-section info)))
+   (let ((definitions (org-export-collect-footnote-definitions info)))
+	 (when definitions
+	   (concat
+	    "\n\n"
+        (org-gmi--build-headline
+         1 (org-ascii--translate "Footnotes" info))
+	    "\n\n"
+	    (mapconcat
+	     #'(lambda (ref)
+		     (let ((id (car ref))
+                   (def (nth 2 ref)))
+               (format "[%s] %s" id (org-export-data def info))))
+	     definitions "\n\n"))))))
+
+(defun org-gmi-template (contents info)
+  "Return body of document after converting it to Gemini syntax.
+CONTENTS is the transcoded contents string.  INFO is a plist
+holding export options."
+  (concat
+   ;; Document title.
+   (org-gmi--build-headline
+    1 (org-export-data (plist-get info :title) info))
+   ;; Document contents.
+   contents))
 
 (defun org-gmi-item (item contents info)
   "Transcode ITEM element into Gemini format.
@@ -269,14 +267,6 @@ DESC is the description part of the link, or the empty string."
 CONTENTS is the paragraph value."
   (org-gmi--format-paragraph contents))
 
-(defun org-gmi-plain-text (text info)
-  "Transcode a TEXT string into Gemini format.
-TEXT is the string to transcode.  INFO is a plist holding
-contextual information."
-  (setq info (plist-put info :with-smart-quotes nil))
-  (setq info (plist-put info :with-special-strings nil))
-  (org-md-plain-text text info))
-
 (defun org-gmi-quote-block (_quote-block contents _info)
   "Transcode QUOTE-BLOCK element into Gemini format.
 CONTENTS is the quote-block value."
@@ -287,7 +277,7 @@ CONTENTS is the quote-block value."
 CONTENTS is the section value."
   (let ((output
          (concat contents "\n"
-                 (org-gmi--describe-links org-gmi--links-in-section))))
+                 (org-gmi--build-links org-gmi--links-in-section))))
     ;; Reset link list
     (setq org-gmi--links-in-section '())
     output))
