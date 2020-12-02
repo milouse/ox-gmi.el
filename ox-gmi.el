@@ -276,7 +276,14 @@ channel."
 (defun org-gmi-link (link desc _info)
   "Transcode a LINK object from Org to Gemini.
 DESC is the description part of the link, or the empty string."
-  (let* ((href (org-element-property :raw-link link))
+  (let* ((href
+          (let* ((target (org-element-property :raw-link link))
+                 (path (org-element-property :path link)))
+            (if (and (member (org-element-property :type link) '("file" "fuzzy"))
+                     (string= ".org" (downcase (file-name-extension path "."))))
+                ;; Replace local org file to gmi files during publication
+                (format "%s.gmi" (file-name-sans-extension path))
+              target)))
          ;; Avoid cut lines in link labels
          (label (replace-regexp-in-string "\r?\n" " " (or desc href)))
          (link-data (assoc href org-gmi--links-in-section))
@@ -288,6 +295,7 @@ DESC is the description part of the link, or the empty string."
       (let* ((scheme (car (split-string href ":" t)))
              (ref-label
               (if (and (not (string= desc href))
+                       (not (string= scheme href)) ;; relative link
                        (not (member scheme '("gemini" "file"))))
                   (format "%s (%s)" label scheme)
                 label)))
