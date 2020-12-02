@@ -246,7 +246,8 @@ channel."
   "Transcode a LINK object from Org to Gemini.
 DESC is the description part of the link, or the empty string."
   (let* ((href (org-element-property :raw-link link))
-         (label (or desc href))
+         ;; Avoid cut lines in link labels
+         (label (replace-regexp-in-string "\r?\n" " " (or desc href)))
          (link-data (assoc href org-gmi--links-in-section))
          ;; Default next-reference
          (next-reference (1+ (length org-gmi--links-in-section))))
@@ -257,8 +258,8 @@ DESC is the description part of the link, or the empty string."
              (ref-label
               (if (and (not (string= desc href))
                        (not (string= scheme "gemini")))
-                  (format "%s (%s)" desc scheme)
-                desc)))
+                  (format "%s (%s)" label scheme)
+                label)))
         (setq link-data (list href next-reference ref-label))
         (add-to-list 'org-gmi--links-in-section link-data t)))
     (format "%s[%d]" label (cadr link-data))))
