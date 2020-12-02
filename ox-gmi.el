@@ -209,8 +209,25 @@ holding export options."
   "Transcode ITEM element into Gemini format.
 CONTENTS is the item value.  INFO is a plist used as a
 communication channel."
-  (replace-regexp-in-string
-   "^-\\s-+" "* " (org-md-item item contents info)))
+  (let* ((type (org-element-property :type (org-export-get-parent item)))
+	     (struct (org-element-property :structure item))
+	     (bullet (if (not (eq type 'ordered)) "*"
+		           (concat (number-to-string
+			                (car (last (org-list-get-item-number
+					                    (org-element-property :begin item)
+					                    struct
+					                    (org-list-prevs-alist struct)
+					                    (org-list-parents-alist struct)))))
+			               "."))))
+    (concat bullet
+	    " "
+	    (pcase (org-element-property :checkbox item)
+	      (`on "[X] ")
+	      (`trans "[-] ")
+	      (`off "[ ] "))
+	    (let ((tag (org-element-property :tag item)))
+	      (and tag (format "%s: " (org-export-data tag info))))
+	    (and contents (org-trim contents)))))
 
 (defun org-gmi-keyword (keyword _contents _info)
   "Transcode a KEYWORD element into Gemini format.
