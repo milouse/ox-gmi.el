@@ -137,7 +137,7 @@ If PREFIX is non-nil, add it at the beginning of each lines."
 INFO is a plist used as a communication channel."
   (let ((language (org-export-data (org-element-property :language block) info))
         (caption (org-export-data (org-element-property :caption block) info)))
-    (setq caption (if (and caption (not (string= "" caption)))
+    (setq caption (if (org-string-nw-p caption)
                       (format "%s - %s" language caption)
                     language))
     (format "```%s\n%s```\n"
