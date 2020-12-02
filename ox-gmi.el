@@ -129,6 +129,18 @@ If PREFIX is non-nil, add it at the beginning of each lines."
    (org-trim
     (replace-regexp-in-string "\r?\n\\([^\r\n]\\)" " \\1" paragraph))))
 
+(defun org-gmi--link-alone-on-line-p (link)
+  "Return t if the given LINK occupies its whole line."
+  (let* ((link-start (org-element-property :begin link))
+         (link-end (org-element-property :end link))
+         (full-link (buffer-substring-no-properties link-start link-end))
+         (raw-link (org-element-property :raw-link link)))
+    (save-excursion
+      (org-goto-line (org-current-line link-start))
+      (let ((line-content (org-trim (thing-at-point 'line t))))
+        (or (string= raw-link line-content)
+            (string= full-link line-content))))))
+
 
 ;;; Transcode Functions
 
@@ -284,24 +296,28 @@ DESC is the description part of the link, or the empty string."
                 ;; Replace local org file to gmi files during publication
                 (format "%s.gmi" (file-name-sans-extension path))
               target)))
+         (link-data (assoc href org-gmi--links-in-section))
+         (scheme (car (split-string href ":" t)))
          ;; Avoid cut lines in link labels
          (label (replace-regexp-in-string "\r?\n" " " (or desc href)))
-         (link-data (assoc href org-gmi--links-in-section))
+         (label-with-scheme
+          (if (and (not (string= desc href))
+                   (not (string= scheme href)) ;; relative link
+                   (not (member scheme '("gemini" "file"))))
+              (format "%s (%s)" label scheme)
+            label))
          ;; Default next-reference
          (next-reference (1+ (length org-gmi--links-in-section))))
-    ;; As links are specific for a section, which should not be that long (?),
-    ;; we will always use the first label encountered for a link as reference.
-    (unless link-data
-      (let* ((scheme (car (split-string href ":" t)))
-             (ref-label
-              (if (and (not (string= desc href))
-                       (not (string= scheme href)) ;; relative link
-                       (not (member scheme '("gemini" "file"))))
-                  (format "%s (%s)" label scheme)
-                label)))
-        (setq link-data (list href next-reference ref-label))
-        (add-to-list 'org-gmi--links-in-section link-data t)))
-    (format "%s[%d]" label (cadr link-data))))
+    ;; Do we need to add the link at the end of the section or should it be
+    ;; directly printed in its own line?
+    (if (org-gmi--link-alone-on-line-p link)
+        (format "=> %s %s\n" href label-with-scheme)
+      ;; As links are specific for a section, which should not be that long (?),
+      ;; we will always use the first label encountered for a link as reference.
+      (unless link-data
+        (setq link-data (list href next-reference label-with-scheme))
+        (add-to-list 'org-gmi--links-in-section link-data t))
+      (format "%s[%d]" label (cadr link-data)))))
 
 (defun org-gmi-paragraph (_paragraph contents _info)
   "Transcode PARAGRAPH element into Gemini format.
