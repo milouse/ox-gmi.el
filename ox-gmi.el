@@ -288,7 +288,7 @@ DESC is the description part of the link, or the empty string."
       (let* ((scheme (car (split-string href ":" t)))
              (ref-label
               (if (and (not (string= desc href))
-                       (not (string= scheme "gemini")))
+                       (not (member scheme '("gemini" "file"))))
                   (format "%s (%s)" label scheme)
                 label)))
         (setq link-data (list href next-reference ref-label))
