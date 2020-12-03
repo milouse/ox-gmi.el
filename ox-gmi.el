@@ -223,7 +223,6 @@ holding export options."
 	    "\n\n"
         (org-gmi--build-headline
          1 (org-ascii--translate "Footnotes" info))
-	    "\n\n"
 	    (mapconcat
 	     #'(lambda (ref)
 		     (let ((id (car ref))
