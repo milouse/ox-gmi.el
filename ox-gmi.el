@@ -54,6 +54,7 @@
 		             (example-block . org-gmi-preformatted-block)
 		             (export-block . org-gmi-export-block)
 		             (fixed-width . org-gmi-preformatted-block)
+                     (footnote-reference . org-gmi-footnote-reference)
 		             (headline . org-gmi-headline)
 		             (inner-template . org-gmi-inner-template)
 		             (item . org-gmi-item)
@@ -141,6 +142,23 @@ If PREFIX is non-nil, add it at the beginning of each lines."
         (or (string= raw-link line-content)
             (string= full-link line-content))))))
 
+(defun org-gmi--number-to-utf8-exponent (number)
+  "Convert a NUMBER to its utf8 exponent display."
+  (let ((exponents '((?1 . "¹")
+                     (?2 . "²")
+                     (?3 . "³")
+                     (?4 . "⁴")
+                     (?5 . "⁵")
+                     (?6 . "⁶")
+                     (?7 . "⁷")
+                     (?8 . "⁸")
+                     (?9 . "⁹")
+                     (?0 . "⁰"))))
+    (mapconcat
+     #'(lambda (digit) (cdr (assoc digit exponents)))
+     (number-to-string number)
+     "")))
+
 
 ;;; Transcode Functions
 
@@ -173,6 +191,12 @@ information."
   "Transcode an ENTITY object from Org to Gemini.
 CONTENTS is the entity itself."
   contents)
+
+(defun org-gmi-footnote-reference (footnote-reference _contents info)
+  "Transcode a FOOTNOTE-REFERENCE element from Org to Gemini.
+CONTENTS is nil.  INFO is a plist holding contextual information."
+  (org-gmi--number-to-utf8-exponent
+   (org-export-get-footnote-number footnote-reference info)))
 
 (defun org-gmi-headline (headline contents info)
   "Transcode HEADLINE element into Gemini format.
@@ -227,7 +251,10 @@ holding export options."
 	     #'(lambda (ref)
 		     (let ((id (car ref))
                    (def (nth 2 ref)))
-               (format "[%s] %s" id (org-export-data def info))))
+               (format "%s %s" (org-gmi--number-to-utf8-exponent id)
+                       (replace-regexp-in-string
+                        "\r?\n" " "
+                        (org-trim (org-export-data def info))))))
 	     definitions "\n\n"))))))
 
 (defun org-gmi-template (contents info)
