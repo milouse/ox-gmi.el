@@ -100,27 +100,25 @@ LINKS is an alist like `org-gmi--links-in-section'"
 INFO is a plist used as a communication channel.
 Optional argument DEPTH, when non-nil, is an integer specifying the
 depth of the table."
-  (concat
-   (org-gmi--build-headline 2 (org-ascii--translate "Table of Contents" info))
-   (mapconcat
-    #'(lambda (headline)
-        (let* ((prefix
-	            (if (not (org-export-numbered-headline-p headline info)) ""
-                  (concat
-                   (mapconcat 'number-to-string
-                              (org-export-get-headline-number headline info)
-                              ".")
-                   ". ")))
-	           (title (org-export-data-with-backend
-		               (org-export-get-alt-title headline info)
-		               (org-export-toc-entry-backend 'gmi)
-		               info))
-	           (tags (and (plist-get info :with-tags)
-			              (not (eq 'not-in-toc (plist-get info :with-tags)))
-			              (org-make-tag-string
-			               (org-export-get-tags headline info)))))
-	      (concat prefix title tags)))
-    (org-export-collect-headlines info depth) "\n")))
+  (mapconcat
+   #'(lambda (headline)
+       (let* ((prefix
+	           (if (not (org-export-numbered-headline-p headline info)) ""
+                 (concat
+                  (mapconcat 'number-to-string
+                             (org-export-get-headline-number headline info)
+                             ".")
+                  ". ")))
+	          (title (org-export-data-with-backend
+		              (org-export-get-alt-title headline info)
+		              (org-export-toc-entry-backend 'gmi)
+		                     info))
+	          (tags (and (plist-get info :with-tags)
+			             (not (eq 'not-in-toc (plist-get info :with-tags)))
+			             (org-make-tag-string
+			              (org-export-get-tags headline info)))))
+	     (concat prefix title tags)))
+   (org-export-collect-headlines info depth) "\n"))
 
 (defun org-gmi--format-paragraph (paragraph &optional prefix)
   "Transcode PARAGRAPH into Gemini format.
@@ -266,11 +264,15 @@ holding export options."
    (org-gmi--build-headline
     1 (org-export-data (plist-get info :title) info))
    ;; TOC
-   (let ((depth (plist-get info :with-toc)))
-		(when depth
-		  (concat
-		   (org-gmi--build-toc info (and (wholenump depth) depth))
-		   "\n\n\n")))
+   (let* ((depth (plist-get info :with-toc))
+          (toc-contents (when depth
+                          (org-gmi--build-toc
+                           info (and (wholenump depth) depth)))))
+     (when (org-string-nw-p toc-contents)
+       (concat
+        (org-gmi--build-headline 2 (org-ascii--translate "Table of Contents" info))
+		toc-contents
+		"\n\n\n")))
    ;; Document contents.
    contents))
 
