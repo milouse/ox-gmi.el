@@ -244,7 +244,7 @@ holding export options."
 	   (concat
 	    "\n\n"
         (org-gmi--build-headline
-         1 (org-ascii--translate "Footnotes" info))
+         2 (org-ascii--translate "Footnotes" info))
 	    (mapconcat
 	     #'(lambda (ref)
 		     (let ((id (car ref))
